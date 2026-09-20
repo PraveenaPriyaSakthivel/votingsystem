@@ -3,6 +3,7 @@ package realtime
 import (
 	"context"
 	"fmt"
+	"strings"
 
 	"github.com/redis/go-redis/v9"
 )
@@ -21,12 +22,34 @@ type RedisStore struct {
 }
 
 // NewRedisStore connects to Redis and pings to verify connectivity.
+//
+// addr can be either:
+//   - a full URL:  rediss://:password@host:port  (Upstash / TLS)
+//   - a plain addr: host:port                    (local Redis, no TLS)
+//
+// When addr starts with "redis://" or "rediss://", go-redis ParseURL handles
+// TLS, ServerName, and authentication automatically — which is what Upstash
+// requires. Plain host:port is kept for local development.
 func NewRedisStore(addr, password string) (*RedisStore, error) {
-	client := redis.NewClient(&redis.Options{
-		Addr:     addr,
-		Password: password,
-		DB:       0,
-	})
+	var opts *redis.Options
+	var err error
+
+	if strings.HasPrefix(addr, "redis://") || strings.HasPrefix(addr, "rediss://") {
+		// Full URL mode — TLS and auth are encoded in the URL itself.
+		opts, err = redis.ParseURL(addr)
+		if err != nil {
+			return nil, fmt.Errorf("redis: invalid URL %q: %w", addr, err)
+		}
+	} else {
+		// Plain host:port mode — used for local development.
+		opts = &redis.Options{
+			Addr:     addr,
+			Password: password,
+			DB:       0,
+		}
+	}
+
+	client := redis.NewClient(opts)
 	if err := client.Ping(context.Background()).Err(); err != nil {
 		return nil, fmt.Errorf("redis ping failed: %w", err)
 	}
