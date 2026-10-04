@@ -2,7 +2,7 @@
 
 A real-time audience polling tool. Create a poll, share the link, watch votes arrive live — no page refresh needed.
 
-**Live demo:** [https://livepoll.example.com](https://livepoll.example.com) *(update with your deployed URL)*
+**Live demo:** https://votingsystem-sage.vercel.app/signup
 
 ---
 
